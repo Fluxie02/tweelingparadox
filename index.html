@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twin Paradox - Special Relativity</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 900px;
+            width: 100%;
+        }
+
+        h1 { text-align: center; color: #333; margin-bottom: 10px; font-size: 2.5em; }
+        .subtitle { text-align: center; color: #666; margin-bottom: 30px; font-size: 1.1em; }
+
+        .visualization {
+            background: linear-gradient(to bottom, #e8f5e9, #f3e5f5);
+            border-radius: 10px;
+            padding: 15px 10px;
+            margin-bottom: 40px;
+            border: 2px solid #667eea;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 460px;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        .control-group { display: flex; flex-direction: column; }
+        .control-label { font-size: 1.1em; font-weight: 600; color: #333; margin-bottom: 12px; }
+        .control-value { font-size: 1.3em; color: #667eea; font-weight: bold; margin-bottom: 15px; }
+
+        input[type="range"] {
+            width: 100%; height: 8px; border-radius: 5px;
+            background: linear-gradient(to right, #667eea, #764ba2);
+            outline: none; -webkit-appearance: none; appearance: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none;
+            width: 24px; height: 24px; border-radius: 50%;
+            background: white; cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            border: 3px solid #667eea;
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 24px; height: 24px; border-radius: 50%;
+            background: white; cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            border: 3px solid #667eea;
+        }
+
+        .results {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+        }
+
+        .result-box {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            border-left: 4px solid #667eea;
+        }
+        .result-box.astra  { border-left-color: #ff6b6b; }
+        .result-box.diff   { border-left-color: #ff9800; }
+
+        .result-label {
+            font-size: 0.95em; color: #666; margin-bottom: 10px;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        .result-value { font-size: 2.2em; font-weight: bold; color: #333; }
+        .result-unit  { font-size: 0.9em; color: #999; }
+
+        @media (max-width: 768px) {
+            .controls { grid-template-columns: 1fr; }
+            .results  { grid-template-columns: 1fr; }
+            h1 { font-size: 1.8em; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>⏱️ Twin Paradox</h1>
+    <p class="subtitle">Special Relativity — Interactive Spacetime Diagram</p>
+
+    <!-- Spacetime diagram injected here by JS -->
+    <div class="visualization" id="vizContainer"></div>
+
+    <div class="controls">
+        <div class="control-group">
+            <label class="control-label">Travel Speed (v/c)</label>
+            <div class="control-value" id="speedValue">0.80c</div>
+            <input type="range" id="speedSlider" min="0.60" max="0.99" step="0.01" value="0.80">
+            <small style="color:#999;margin-top:8px;">0.60c to 0.99c</small>
+        </div>
+        <div class="control-group">
+            <label class="control-label">Travel Duration (Earth Years, one way)</label>
+            <div class="control-value" id="yearsValue">5 years</div>
+            <input type="range" id="yearsSlider" min="1" max="30" step="1" value="5">
+            <small style="color:#999;margin-top:8px;">1 to 30 years</small>
+        </div>
+    </div>
+
+    <div class="results">
+        <div class="result-box">
+            <div class="result-label">Age of Eartha</div>
+            <div class="result-value" id="earthaAge">20.00</div>
+            <div class="result-unit">years</div>
+        </div>
+        <div class="result-box astra">
+            <div class="result-label">Age of Astra</div>
+            <div class="result-value" id="astraAge">20.00</div>
+            <div class="result-unit">years</div>
+        </div>
+        <div class="result-box diff">
+            <div class="result-label">Age Difference</div>
+            <div class="result-value" id="ageDiff">0.00</div>
+            <div class="result-unit">years</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const speedSlider   = document.getElementById('speedSlider');
+    const yearsSlider   = document.getElementById('yearsSlider');
+    const speedValueEl  = document.getElementById('speedValue');
+    const yearsValueEl  = document.getElementById('yearsValue');
+    const earthaAgeEl   = document.getElementById('earthaAge');
+    const astraAgeEl    = document.getElementById('astraAge');
+    const ageDiffEl     = document.getElementById('ageDiff');
+    const vizContainer  = document.getElementById('vizContainer');
+
+    const INITIAL_AGE = 20;
+
+    /* ── clock face helper ─────────────────────────────────────────────── */
+    function clock(cx, cy, r, t, fill, stroke) {
+        cx = +cx.toFixed(2); cy = +cy.toFixed(2);
+        /* hand rotates: one full revolution every 12 time-units */
+        const ang = ((t % 12) / 12) * 2 * Math.PI - Math.PI / 2;
+        const hx = (cx + r * 0.62 * Math.cos(ang)).toFixed(2);
+        const hy = (cy + r * 0.62 * Math.sin(ang)).toFixed(2);
+        return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>` +
+               `<line x1="${cx}" y1="${cy}" x2="${hx}" y2="${hy}" stroke="${stroke}" stroke-width="2" stroke-linecap="round"/>` +
+               `<circle cx="${cx}" cy="${cy}" r="1.8" fill="${stroke}"/>`;
+    }
+
+    /* ── main draw routine ─────────────────────────────────────────────── */
+    function drawDiagram() {
+        const v  = parseFloat(speedSlider.value);   // v/c
+        const T  = parseFloat(yearsSlider.value);   // one-way earth time
+        const gamma    = 1 / Math.sqrt(1 - v * v);
+        const totalET  = 2 * T;                     // round-trip earth time
+        const totalAT  = totalET / gamma;            // Astra proper time
+        const maxDist  = v * T;                     // spatial extent (ly)
+
+        /* ── SVG canvas geometry ─────────────────────────── */
+        const W = 520, H = 450;
+        const pT = 62, pB = 48;
+        const availH = H - pT - pB;                 // usable height for time axis
+
+        const xE  = 130;           // Eartha worldline x-pixel
+        const xAC = W - 60;        // Alpha Centauri x-pixel
+        const spaceSpan = xAC - xE;
+
+        /* coordinate transforms */
+        const svgY   = t  => H - pB - (t / totalET) * availH;
+        const svgX   = x  => xE + (x / maxDist) * spaceSpan;
+        const astraPosAtET = tE =>
+            tE <= T ? v * tE : maxDist - v * (tE - T);
+
+        /* ── marker density ──────────────────────────────── */
+        const etStep  = Math.max(1, Math.ceil(totalET / 12));
+        const atFloor = Math.floor(totalAT);
+        const atStep  = atFloor < 2 ? 1 : Math.max(1, Math.ceil(atFloor / 10));
+        const r = totalET > 24 ? 7 : totalET > 14 ? 9 : 12;
+
+        /* ── build SVG ───────────────────────────────────── */
+        let s = [];
+
+        /* --- axes --- */
+        /* Time (vertical, far left) */
+        s.push(`<line x1="46" y1="${H-pB+4}" x2="46" y2="${pT-8}" stroke="#555" stroke-width="1.5"/>`);
+        s.push(`<polygon points="46,${pT-16} 42,${pT-4} 50,${pT-4}" fill="#555"/>`);
+        s.push(`<text transform="rotate(-90,15,${H/2})" x="15" y="${H/2+5}" text-anchor="middle" font-size="12" fill="#555">Time</text>`);
+
+        /* Space (horizontal, bottom) */
+        const axY = H - pB + 22;
+        s.push(`<line x1="${xE-20}" y1="${axY}" x2="${xAC+8}" y2="${axY}" stroke="#555" stroke-width="1.5"/>`);
+        s.push(`<polygon points="${xAC+16},${axY} ${xAC+4},${axY-4} ${xAC+4},${axY+4}" fill="#555"/>`);
+        s.push(`<text x="${(xE+xAC)/2}" y="${H-4}" text-anchor="middle" font-size="12" fill="#555">Space</text>`);
+
+        /* --- Alpha Centauri line --- */
+        s.push(`<line x1="${xAC}" y1="${svgY(0)}" x2="${xAC}" y2="${pT+14}" stroke="#2e7d32" stroke-width="1.2" stroke-dasharray="5,3" opacity="0.7"/>`);
+        s.push(`<text x="${xAC}" y="${pT+9}" text-anchor="middle" font-size="10" fill="#2e7d32" font-weight="bold">Alpha Centauri</text>`);
+
+        /* --- ET simultaneity lines (horizontal dashes, behind everything) --- */
+        for (let t = etStep; t <= totalET + 0.001; t += etStep) {
+            const tC = Math.min(t, totalET);
+            const y  = svgY(tC).toFixed(1);
+            const ax = svgX(astraPosAtET(tC)).toFixed(1);
+            s.push(`<line x1="${xE}" y1="${y}" x2="${ax}" y2="${y}" stroke="#a5d6a7" stroke-width="0.9" stroke-dasharray="4,3"/>`);
+        }
+
+        /* --- worldlines --- */
+        /* Eartha (dark green, straight up) */
+        s.push(`<line x1="${xE}" y1="${svgY(0).toFixed(1)}" x2="${xE}" y2="${svgY(totalET).toFixed(1)}" stroke="#1b5e20" stroke-width="3"/>`);
+        /* Astra outbound */
+        s.push(`<line x1="${xE}" y1="${svgY(0).toFixed(1)}" x2="${xAC}" y2="${svgY(T).toFixed(1)}" stroke="#388e3c" stroke-width="2.5"/>`);
+        /* Astra return */
+        s.push(`<line x1="${xAC}" y1="${svgY(T).toFixed(1)}" x2="${xE}" y2="${svgY(totalET).toFixed(1)}" stroke="#388e3c" stroke-width="2.5"/>`);
+
+        /* --- worldline labels --- */
+        /* "Eartha stays home" at mid-height on her line */
+        s.push(`<text x="${xE+9}" y="${(svgY(T)+4).toFixed(1)}" font-size="10" fill="#1b5e20" font-style="italic">Eartha stays home</text>`);
+
+        /* "Astra goes" below the midpoint of outbound leg */
+        const midOutX = ((xE + xAC) / 2 + 8).toFixed(1);
+        const midOutY = ((svgY(0) + svgY(T)) / 2 + 15).toFixed(1);
+        s.push(`<text x="${midOutX}" y="${midOutY}" font-size="10" fill="#2e7d32" font-style="italic">Astra goes ↗</text>`);
+
+        /* "Astra returns" above the midpoint of return leg */
+        const midRetX = ((xE + xAC) / 2 + 8).toFixed(1);
+        const midRetY = ((svgY(T) + svgY(totalET)) / 2 - 5).toFixed(1);
+        s.push(`<text x="${midRetX}" y="${midRetY}" font-size="10" fill="#2e7d32" font-style="italic">↙ Astra returns</text>`);
+
+        /* --- ET clocks on Eartha's worldline --- */
+        for (let t = etStep; t <= totalET + 0.001; t += etStep) {
+            const tC = Math.min(t, totalET);
+            const y  = svgY(tC);
+            s.push(clock(xE, y, r, tC, '#fff9c4', '#3949ab'));
+            s.push(`<text x="${(xE - r - 5).toFixed(1)}" y="${(y + 3.5).toFixed(1)}" text-anchor="end" font-size="10" fill="#283593">${Math.round(tC)} ET</text>`);
+        }
+
+        /* --- AT clocks on Astra's worldline --- */
+        for (let tau = atStep; tau <= totalAT - 0.001; tau += atStep) {
+            const tE = gamma * tau;                    // earth-frame time
+            const xs = astraPosAtET(tE);               // spatial position
+            const cx = svgX(xs);
+            const cy = svgY(tE);
+            const onOut = tE <= T + 0.0001;
+
+            s.push(clock(cx, cy, r, tau, '#ffcdd2', '#c62828'));
+
+            if (onOut) {
+                /* outbound: label to the right (outside of V) */
+                s.push(`<text x="${(cx + r + 3).toFixed(1)}" y="${(cy + 3.5).toFixed(1)}" text-anchor="start" font-size="10" fill="#b71c1c">${Math.round(tau)} AT</text>`);
+            } else {
+                /* return: label to the left (outside of V) */
+                s.push(`<text x="${(cx - r - 3).toFixed(1)}" y="${(cy + 3.5).toFixed(1)}" text-anchor="end" font-size="10" fill="#b71c1c">${Math.round(tau)} AT</text>`);
+            }
+        }
+
+        /* --- key junction dots --- */
+        /* Departure (t=0) */
+        s.push(`<circle cx="${xE}" cy="${svgY(0).toFixed(1)}" r="5" fill="#212121"/>`);
+        /* Turnaround */
+        s.push(`<circle cx="${xAC}" cy="${svgY(T).toFixed(1)}" r="5" fill="#1b5e20"/>`);
+        /* Reunion (t=totalET) */
+        s.push(`<circle cx="${xE}" cy="${svgY(totalET).toFixed(1)}" r="5" fill="#212121"/>`);
+
+        /* --- top summary labels --- */
+        s.push(`<text x="${xE}" y="${pT-26}" text-anchor="middle" font-size="12" fill="#283593" font-weight="bold">Eartha ages ${totalET.toFixed(0)} years</text>`);
+        const atLabelX = ((xE + xAC) / 2 + 30).toFixed(1);
+        s.push(`<text x="${atLabelX}" y="${pT-26}" text-anchor="middle" font-size="12" fill="#b71c1c" font-weight="bold">Astra ages ${totalAT.toFixed(1)} years</text>`);
+
+        /* --- legend --- */
+        const lx = xE, ly = pT - 10;
+        s.push(`<circle cx="${lx-50}" cy="${ly}" r="6" fill="#fff9c4" stroke="#3949ab" stroke-width="1.5"/>`);
+        s.push(`<text x="${lx-42}" y="${ly+4}" font-size="9" fill="#283593">= Earth clock (ET)</text>`);
+        s.push(`<circle cx="${xAC-20}" cy="${ly}" r="6" fill="#ffcdd2" stroke="#c62828" stroke-width="1.5"/>`);
+        s.push(`<text x="${xAC-12}" y="${ly+4}" font-size="9" fill="#b71c1c">= Astra clock (AT)</text>`);
+
+        vizContainer.innerHTML =
+            `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px;display:block;margin:0 auto;">${s.join('')}</svg>`;
+    }
+
+    /* ── bottom stats ──────────────────────────────────────────────────── */
+    function updateStats() {
+        const v = parseFloat(speedSlider.value);
+        const T = parseFloat(yearsSlider.value);
+
+        speedValueEl.textContent = v.toFixed(2) + 'c';
+        yearsValueEl.textContent = T + ' year' + (T === 1 ? '' : 's');
+
+        const gamma      = 1 / Math.sqrt(1 - v * v);
+        const earthTime  = 2 * T;
+        const properTime = earthTime / gamma;
+
+        const eartha_final = INITIAL_AGE + earthTime;
+        const astra_final  = INITIAL_AGE + properTime;
+
+        earthaAgeEl.textContent = eartha_final.toFixed(2);
+        astraAgeEl.textContent  = astra_final.toFixed(2);
+        ageDiffEl.textContent   = (eartha_final - astra_final).toFixed(2);
+    }
+
+    function updateAll() {
+        updateStats();
+        drawDiagram();
+    }
+
+    speedSlider.addEventListener('input', updateAll);
+    yearsSlider.addEventListener('input', updateAll);
+
+    updateAll();
+</script>
+</body>
+</html>
